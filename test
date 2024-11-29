@@ -1,0 +1,635 @@
+Create a small RMI Application to perform addition, subtraction, multiplication and division for a
+given two numbers from the client. Server should be performed all the calculations and results
+should be send back as the response to the client. 
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
+public interface Calculator extends Remote {
+    double add(double a, double b) throws RemoteException;
+    double subtract(double a, double b) throws RemoteException;
+    double multiply(double a, double b) throws RemoteException;
+    double divide(double a, double b) throws RemoteException;
+}
+
+
+import java.rmi.server.UnicastRemoteObject;
+import java.rmi.RemoteException;
+
+public class CalculatorImpl extends UnicastRemoteObject implements Calculator {
+    protected CalculatorImpl() throws RemoteException {
+        super();
+    }
+
+    @Override
+    public double add(double a, double b) throws RemoteException {
+        return a + b;
+    }
+
+    @Override
+    public double subtract(double a, double b) throws RemoteException {
+        return a - b;
+    }
+
+    @Override
+    public double multiply(double a, double b) throws RemoteException {
+        return a * b;
+    }
+
+    @Override
+    public double divide(double a, double b) throws RemoteException {
+        if (b == 0) throw new ArithmeticException("Division by zero is not allowed.");
+        return a / b;
+    }
+}
+
+
+import java.rmi.Naming;
+import java.rmi.registry.LocateRegistry;
+
+public class CalculatorServer {
+    public static void main(String[] args) {
+        try {
+            // Create and export the remote object
+            CalculatorImpl calc = new CalculatorImpl();
+
+            // Start the RMI registry
+            LocateRegistry.createRegistry(1099); // Default RMI registry port
+
+            // Bind the remote object in the registry
+            Naming.rebind("CalculatorService", calc);
+
+            System.out.println("Calculator Server is ready.");
+        } catch (Exception e) {
+            System.err.println("Server exception: " + e.toString());
+            e.printStackTrace();
+        }
+    }
+}
+
+
+import java.rmi.Naming;
+
+public class CalculatorClient {
+    public static void main(String[] args) {
+        try {
+            // Lookup the remote object from the registry
+            Calculator calc = (Calculator) Naming.lookup("rmi://localhost/CalculatorService");
+
+            // Perform operations
+            double num1 = 12, num2 = 4;
+
+            System.out.println("Addition: " + calc.add(num1, num2));
+            System.out.println("Subtraction: " + calc.subtract(num1, num2));
+            System.out.println("Multiplication: " + calc.multiply(num1, num2));
+            System.out.println("Division: " + calc.divide(num1, num2));
+        } catch (Exception e) {
+            System.err.println("Client exception: " + e.toString());
+            e.printStackTrace();
+        }
+    }
+}
+
+
+run
+rmiregistry
+
+
+Develop a small RMI Chat Application using Java to send a simple message from client to server
+and server to client.
+
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
+public interface ChatInterface extends Remote {
+    void sendMessage(String message) throws RemoteException;
+    String receiveMessage() throws RemoteException;
+}
+
+
+import java.rmi.server.UnicastRemoteObject;
+import java.rmi.RemoteException;
+
+public class ChatImpl extends UnicastRemoteObject implements ChatInterface {
+    private String lastMessage = "";
+
+    protected ChatImpl() throws RemoteException {
+        super();
+    }
+
+    @Override
+    public void sendMessage(String message) throws RemoteException {
+        System.out.println("Message received from client: " + message);
+        lastMessage = message; // Save the last message received.
+    }
+
+    @Override
+    public String receiveMessage() throws RemoteException {
+        return "Server Response: You said, '" + lastMessage + "'";
+    }
+}
+
+
+import java.rmi.Naming;
+import java.rmi.registry.LocateRegistry;
+
+public class ChatServer {
+    public static void main(String[] args) {
+        try {
+            // Create and export the remote object
+            ChatImpl chat = new ChatImpl();
+
+            // Start the RMI registry
+            LocateRegistry.createRegistry(1099); // Default RMI registry port
+
+            // Bind the remote object in the registry
+            Naming.rebind("ChatService", chat);
+
+            System.out.println("Chat Server is ready.");
+        } catch (Exception e) {
+            System.err.println("Server exception: " + e.toString());
+            e.printStackTrace();
+        }
+    }
+}
+
+
+import java.rmi.Naming;
+import java.util.Scanner;
+
+public class ChatClient {
+    public static void main(String[] args) {
+        try {
+            // Lookup the remote object from the registry
+            ChatInterface chat = (ChatInterface) Naming.lookup("rmi://localhost/ChatService");
+
+            // Setup input for user messages
+            Scanner scanner = new Scanner(System.in);
+
+            System.out.println("Type your message (type 'exit' to quit):");
+            while (true) {
+                System.out.print("You: ");
+                String message = scanner.nextLine();
+
+                if (message.equalsIgnoreCase("exit")) {
+                    System.out.println("Exiting chat...");
+                    break;
+                }
+
+                // Send message to the server
+                chat.sendMessage(message);
+
+                // Receive the server's response
+                String response = chat.receiveMessage();
+                System.out.println(response);
+            }
+
+            scanner.close();
+        } catch (Exception e) {
+            System.err.println("Client exception: " + e.toString());
+            e.printStackTrace();
+        }
+    }
+}
+
+
+Build a RMI Application to transfer a file from client to server. 
+
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
+public interface FileTransferInterface extends Remote {
+    void uploadFile(String fileName, byte[] fileData) throws RemoteException;
+}
+
+
+import java.rmi.server.UnicastRemoteObject;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.rmi.RemoteException;
+
+public class FileTransferImpl extends UnicastRemoteObject implements FileTransferInterface {
+
+    protected FileTransferImpl() throws RemoteException {
+        super();
+    }
+
+    @Override
+    public void uploadFile(String fileName, byte[] fileData) throws RemoteException {
+        try (FileOutputStream fos = new FileOutputStream("Server_" + fileName)) {
+            fos.write(fileData);
+            System.out.println("File '" + fileName + "' has been successfully uploaded to the server.");
+        } catch (IOException e) {
+            System.err.println("Error saving file: " + e.getMessage());
+        }
+    }
+}
+
+
+import java.rmi.Naming;
+import java.rmi.registry.LocateRegistry;
+
+public class FileTransferServer {
+    public static void main(String[] args) {
+        try {
+            // Create and export the remote object
+            FileTransferImpl fileTransfer = new FileTransferImpl();
+
+            // Start the RMI registry
+            LocateRegistry.createRegistry(1099);
+
+            // Bind the remote object in the registry
+            Naming.rebind("FileTransferService", fileTransfer);
+
+            System.out.println("File Transfer Server is ready.");
+        } catch (Exception e) {
+            System.err.println("Server exception: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+
+
+import java.rmi.Naming;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.io.IOException;
+
+public class FileTransferClient {
+    public static void main(String[] args) {
+        try {
+            // Lookup the remote object
+            FileTransferInterface fileTransfer = (FileTransferInterface) Naming.lookup("rmi://localhost/FileTransferService");
+
+            // Specify the file to be uploaded
+            String filePath = "client_file.txt"; // Replace with the actual file path on the client
+            String fileName = "uploaded_file.txt"; // The name to save on the server
+
+            // Read the file into a byte array
+            byte[] fileData = Files.readAllBytes(Paths.get(filePath));
+
+            // Upload the file to the server
+            fileTransfer.uploadFile(fileName, fileData);
+
+            System.out.println("File '" + fileName + "' has been successfully sent to the server.");
+        } catch (IOException e) {
+            System.err.println("Error reading file: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Client exception: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+
+
+///////////////////////////
+tcp socket
+
+import java.io.*;
+import java.net.Socket;
+
+public class FileClient {
+    public static void main(String[] args) {
+        String serverAddress = "localhost"; // Server IP
+        int serverPort = 5000; // Port to connect to the server
+
+        try (Socket socket = new Socket(serverAddress, serverPort);
+             FileInputStream fileInputStream = new FileInputStream("C:/path_to_original/original.txt");
+             OutputStream outputStream = socket.getOutputStream()) {
+
+            System.out.println("Connected to server. Sending file...");
+
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+
+            // Read the file and send it to the server
+            while ((bytesRead = fileInputStream.read(buffer)) > 0) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+
+            System.out.println("File sent successfully!");
+        } catch (IOException e) {
+            System.err.println("Client error: " + e.getMessage());
+        }
+    }
+}
+
+
+import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public class FileServer {
+    public static void main(String[] args) {
+        int port = 5000; // Port to listen on
+
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            System.out.println("Server is listening on port " + port);
+
+            // Accept a client connection
+            Socket socket = serverSocket.accept();
+            System.out.println("Client connected. Receiving file...");
+
+            try (InputStream inputStream = socket.getInputStream();
+                 FileOutputStream fileOutputStream = new FileOutputStream("D:/path_to_copy/copy.txt")) {
+
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+
+                // Receive the file and save it
+                while ((bytesRead = inputStream.read(buffer)) > 0) {
+                    fileOutputStream.write(buffer, 0, bytesRead);
+                }
+
+                System.out.println("File received and saved as 'copy.txt'.");
+            }
+
+        } catch (IOException e) {
+            System.err.println("Server error: " + e.getMessage());
+        }
+    }
+}
+Again implement the above Exercise 01 using Java UDP socket programming.
+
+import java.io.*;
+import java.net.*;
+
+public class FileClientUDP {
+    public static void main(String[] args) {
+        String serverAddress = "localhost"; // Server IP
+        int serverPort = 5000; // Server port
+
+        try (DatagramSocket socket = new DatagramSocket();
+             FileInputStream fileInputStream = new FileInputStream("C:/path_to_original/original.txt")) {
+
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+
+            // Notify the server to start receiving
+            String startMessage = "START";
+            DatagramPacket startPacket = new DatagramPacket(startMessage.getBytes(), startMessage.length(),
+                                                             InetAddress.getByName(serverAddress), serverPort);
+            socket.send(startPacket);
+
+            System.out.println("Sending file...");
+
+            // Read the file and send it as packets
+            while ((bytesRead = fileInputStream.read(buffer)) > 0) {
+                DatagramPacket packet = new DatagramPacket(buffer, bytesRead,
+                                                            InetAddress.getByName(serverAddress), serverPort);
+                socket.send(packet);
+            }
+
+            // Notify the server that the file transfer is complete
+            String endMessage = "END";
+            DatagramPacket endPacket = new DatagramPacket(endMessage.getBytes(), endMessage.length(),
+                                                           InetAddress.getByName(serverAddress), serverPort);
+            socket.send(endPacket);
+
+            System.out.println("File sent successfully!");
+        } catch (IOException e) {
+            System.err.println("Client error: " + e.getMessage());
+        }
+    }
+}
+
+
+import java.io.*;
+import java.net.*;
+
+public class FileServerUDP {
+    public static void main(String[] args) {
+        int port = 5000; // Port to listen on
+        byte[] buffer = new byte[4096];
+
+        try (DatagramSocket socket = new DatagramSocket(port);
+             FileOutputStream fileOutputStream = new FileOutputStream("D:/path_to_copy/copy.txt")) {
+
+            System.out.println("Server is listening on port " + port);
+
+            boolean receiving = true;
+
+            while (receiving) {
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                socket.receive(packet);
+
+                String receivedData = new String(packet.getData(), 0, packet.getLength());
+
+                // Check for start and end messages
+                if (receivedData.equals("START")) {
+                    System.out.println("File transfer initiated...");
+                } else if (receivedData.equals("END")) {
+                    System.out.println("File transfer completed.");
+                    receiving = false;
+                } else {
+                    // Write packet data to the file
+                    fileOutputStream.write(packet.getData(), 0, packet.getLength());
+                }
+            }
+
+            System.out.println("File saved as 'copy.txt'.");
+        } catch (IOException e) {
+            System.err.println("Server error: " + e.getMessage());
+        }
+    }
+}
+
+
+Write a program using Java TCP socket programming to build a communication between
+client and server (sending message from client to server and server to client). 
+
+import java.io.*;
+import java.net.*;
+
+public class TCPServer {
+    public static void main(String[] args) {
+        int port = 5000; // Port number to listen on
+
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            System.out.println("Server is listening on port " + port);
+
+            while (true) {
+                // Accept client connection
+                Socket socket = serverSocket.accept();
+                System.out.println("New client connected");
+
+                // Input and output streams for communication
+                InputStream input = socket.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+                OutputStream output = socket.getOutputStream();
+                PrintWriter writer = new PrintWriter(output, true);
+
+                // Read message from the client
+                String clientMessage = reader.readLine();
+                System.out.println("Received from client: " + clientMessage);
+
+                // Send response to the client
+                String serverMessage = "Server received: " + clientMessage;
+                writer.println(serverMessage);
+
+                // Close the socket after communication
+                socket.close();
+                System.out.println("Connection closed");
+            }
+        } catch (IOException ex) {
+            System.out.println("Server error: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+}
+
+
+import java.io.*;
+import java.net.*;
+
+public class TCPClient {
+    public static void main(String[] args) {
+        String hostname = "localhost"; // Server IP address
+        int port = 5000; // Server port number
+
+        try (Socket socket = new Socket(hostname, port)) {
+            System.out.println("Connected to the server");
+
+            // Input and output streams for communication
+            OutputStream output = socket.getOutputStream();
+            PrintWriter writer = new PrintWriter(output, true);
+            InputStream input = socket.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+
+            // Send a message to the server
+            String clientMessage = "Hello, Server!";
+            writer.println(clientMessage);
+            System.out.println("Sent to server: " + clientMessage);
+
+            // Read server's response
+            String serverMessage = reader.readLine();
+            System.out.println("Received from server: " + serverMessage);
+
+            // Close the socket
+            socket.close();
+            System.out.println("Connection closed");
+        } catch (IOException ex) {
+            System.out.println("Client error: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+}
+
+
+Write a program using Java UDP socket programming to build a communication between
+client and server (sending message from client to server and server to client)
+
+import java.net.*;
+
+public class UDPServer {
+    public static void main(String[] args) {
+        int port = 5000; // Port number to listen on
+        byte[] buffer = new byte[1024];
+
+        try (DatagramSocket serverSocket = new DatagramSocket(port)) {
+            System.out.println("Server is listening on port " + port);
+
+            while (true) {
+                // Receive packet from the client
+                DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
+                serverSocket.receive(receivePacket);
+
+                // Extract client's message
+                String clientMessage = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                System.out.println("Received from client: " + clientMessage);
+
+                // Prepare server's response
+                String serverMessage = "Server received: " + clientMessage;
+                byte[] responseData = serverMessage.getBytes();
+
+                // Send response to the client
+                InetAddress clientAddress = receivePacket.getAddress();
+                int clientPort = receivePacket.getPort();
+                DatagramPacket sendPacket = new DatagramPacket(responseData, responseData.length, clientAddress, clientPort);
+                serverSocket.send(sendPacket);
+
+                System.out.println("Response sent to client");
+            }
+        } catch (Exception e) {
+            System.out.println("Server error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+
+import java.net.*;
+
+public class UDPClient {
+    public static void main(String[] args) {
+        String hostname = "localhost"; // Server IP address
+        int port = 5000; // Server port number
+        byte[] buffer = new byte[1024];
+
+        try (DatagramSocket clientSocket = new DatagramSocket()) {
+            // Send a message to the server
+            String clientMessage = "Hello, Server!";
+            byte[] messageData = clientMessage.getBytes();
+            InetAddress serverAddress = InetAddress.getByName(hostname);
+            DatagramPacket sendPacket = new DatagramPacket(messageData, messageData.length, serverAddress, port);
+            clientSocket.send(sendPacket);
+            System.out.println("Sent to server: " + clientMessage);
+
+            // Receive server's response
+            DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
+            clientSocket.receive(receivePacket);
+
+            // Extract server's response
+            String serverMessage = new String(receivePacket.getData(), 0, receivePacket.getLength());
+            System.out.println("Received from server: " + serverMessage);
+        } catch (Exception e) {
+            System.out.println("Client error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+
+
+
+
+//////////////
+azure
+mkdir ICTbatch3
+cd $HOME/ICTbatch3
+git clone https://github.com/Azure-Samples/html-docs-hello-world.git
+
+cd html-docs-hello-world
+az webapp up --location westeurope --name <app_name> --html
+
+update
+ az webapp up --location westeurope --name <app_name> --html
+
+az group delete --name appsvc_rg_Windows_westeurope
+
+php////
+local github repo import
+
+az webapp deployment user set --user-name <username> --password <password>
+
+az group create --name myResourceGroup --location "West Europe"
+
+
+az appservice plan create --name myAppServicePlan --resource-group
+myResourceGroup --sku b1 --is-linux
+
+# Bash
+az webapp create --resource-group myResourceGroup --plan myAppServicePlan
+--name <app-name> --runtime "PHP|7.4" --deployment-local-git
+# PowerShell
+az --% webapp create --resource-group myResourceGroup --plan
+myAppServicePlan --name <app-name> --runtime "PHP|7.4" --deploymentlocal-git
+
+git remote add azure <deploymentLocalGitUrl-from-create-step>
+
+
+git push azure master
+
+git commit -am "updated output"
+git push azure master 
+
+az group delete --name myResourceGroup
+
+https://dynamicphp.azurewebsites.net/
